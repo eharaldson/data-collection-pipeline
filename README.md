@@ -1,1 +1,5 @@
 # Data Collection Pipeline
+## Milestone 3
+- For this project, I decided to do the website scraping on yahoo finance. I thought this would be a good website for this as it is free to use and holds a lot of specific information for several different companies which can then be accessed with the same code. In addition I thought it would be interesting to extend the project by creating a stock screener that would scrape yahoo finance for the relevant data. This aspect would have an interesting use case and I believe is doable in the time frame of the porject.
+
+- In this milestone of the project, I created a scraper class that contains methods to: visit a link, access the search bar, scroll through the page, and convert a list of stock tickers into the specific urls that contain the data for that specifc ticker. The latter method will be useful when extending the project to be a stock screener.
