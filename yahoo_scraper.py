@@ -39,6 +39,7 @@ class Scraper:      # Class with methods to scrape websites
         search_bar.click()
         search_bar.send_keys(string)
         search_bar.send_keys(Keys.RETURN)
+        self.landing_page = False
 
     def end_session(self):          # End the session by quitting the driver
         self.driver.quit()
@@ -57,11 +58,13 @@ class Scraper:      # Class with methods to scrape websites
             links.append(f'https://finance.yahoo.com/quote/{ticker}/')
         return links
 
-yahoo_finance = Scraper()
+if __name__ == "__main__":
+    
+    yahoo_finance = Scraper()
 
-yahoo_finance.look_at('https://uk.finance.yahoo.com/')
-yahoo_finance.search('AAPL')
+    yahoo_finance.look_at('https://uk.finance.yahoo.com/')
+    yahoo_finance.search('AAPL')
 
-yahoo_finance.scroll_bottom()
+    yahoo_finance.scroll_bottom()
 
-yahoo_finance.end_session()
+    yahoo_finance.end_session()
