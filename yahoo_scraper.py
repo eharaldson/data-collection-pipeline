@@ -5,6 +5,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import time
+import os
+import json
 
 from convert_data import convert
 
@@ -14,6 +16,18 @@ def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a fun
         time.sleep(2)
         return output
     return wrapper
+
+def create_folder(folder_name): # Create a foler in the current directory
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory, folder_name)
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+    return final_directory
+
+def save_json(dict, file_path):
+    completeName = os.path.join(file_path, dict['ticker']+".json")    
+    with open(completeName, "w") as file:
+        json.dump(dict, file)     
 
 class Scraper:      # Class with methods to scrape websites
 
@@ -153,10 +167,13 @@ class Scraper:      # Class with methods to scrape websites
         # Initialise the ids of the data rows which will then be returned
         self.id = 0
 
+        # Create a raw data folder to store data
+        folder_path = create_folder('raw_data')
+
         # Loop through the list of links and extract the data needed
         for link in list_of_links:
             data = self.extract_data_ticker(link)
-            print(data)
+            save_json(data, folder_path)    # Save file in raw_data folder
 
 if __name__ == "__main__":
     
