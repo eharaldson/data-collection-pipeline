@@ -57,7 +57,7 @@ class Scraper:      # Class with methods to scrape websites
     def ticker_to_link(self, tickers):          # Takes in a list of tickers and returns a list of the links to each tickers statistics and analysis page
         links = []
         for ticker in tickers:
-            links.append((f'https://finance.yahoo.com/quote/{ticker}/'))
+            links.append((f'https://finance.yahoo.com/quote/{ticker}/', ticker))
         return links
 
     def extract_statistics_page(self):          # Extract data from the statistics page of a ticker
@@ -124,25 +124,26 @@ class Scraper:      # Class with methods to scrape websites
         self.id += 1
 
         # Initialise a data dictionary with the specific idea for this ticker
-        data = {'id': self.id}
+        data = {'id': self.id, 'ticker': link[1]}
 
         # Visit the tickers yahoo finance page 
-        self.look_at(link)
+        self.look_at(link[0])
 
         # Extract data from the summary page
         data_summary = self.extract_summary_page()
+        data = data | data_summary
 
         # Move to the statistics page by clicking on the button
         self.driver.find_element(by=By.XPATH, value='//li[@data-test="STATISTICS"]').click()
 
-        # Wait 2 seconds so that the website does not suspect a bot
-        time.sleep(2)
+        # Wait 1 seconds so that the website does not suspect a bot
+        time.sleep(1)
 
         # Extract data from the statistics page
         data_statistics = self.extract_statistics_page()
-        print(data_statistics)
+        data = data | data_statistics
 
-        #return data_summary | data_statistics
+        return data
 
     def extract_all_data(self, tickers):        # Extract data for each ticker inputted into method
 
