@@ -4,11 +4,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from datetime import datetime
+from convert_data import convert
+
 import time
 import os
 import json
-
-from convert_data import convert
+import requests
 
 def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a function is completed to make sure website does not think I am a bot
     def wrapper(*args, **kwargs):
@@ -24,10 +26,22 @@ def create_folder(folder_name): # Create a foler in the current directory
         os.makedirs(final_directory)
     return final_directory
 
-def save_json(dict, file_path):
-    completeName = os.path.join(file_path, dict['ticker']+".json")    
-    with open(completeName, "w") as file:
-        json.dump(dict, file)     
+def save_json(dict, file_path): # Save a dictonary into json file in specific file_path
+    completeName = os.path.join(file_path, dict['ticker']+".json")  
+    if not os.path.exists(completeName):
+        with open(completeName, "w") as file:
+            json.dump(dict, file)     
+
+def download_img(img_url, id):  # Download an image with correct file name in the images folder of raw_data
+    print(img_url[1:-1])
+    img_data = requests.get(img_url[1:-1]).content
+    date_string = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
+    date = date_string[:10].replace('-', '')
+    time = date_string[11:].replace(':', '')
+    directory = create_folder('raw_data/images')
+    file_name = os.path.join(directory, date+'_'+time+'_'+str(id)+'.png')
+    with open(file_name, "wb") as file:
+        file.write(img_data)
 
 class Scraper:      # Class with methods to scrape websites
 
@@ -35,6 +49,7 @@ class Scraper:      # Class with methods to scrape websites
     def __init__(self):
         self.driver = webdriver.Chrome() 
         self.landing_page = True
+        self.img_id = 0
 
     # Methods
     @wait
@@ -56,9 +71,6 @@ class Scraper:      # Class with methods to scrape websites
         search_bar.send_keys(string)
         search_bar.send_keys(Keys.RETURN)
         self.landing_page = False
-
-    def end_session(self):                      # End the session by quitting the driver
-        self.driver.quit()
 
     @wait
     def scroll_bottom(self):                    # Scroll to the bottom of the page
@@ -175,11 +187,23 @@ class Scraper:      # Class with methods to scrape websites
             data = self.extract_data_ticker(link)
             save_json(data, folder_path)    # Save file in raw_data folder
 
+    def extract_logo(self):                     # Extract Yahoo Finance logo
+        logo_element = self.driver.find_element(by=By.XPATH, value='//a[@id="header-logo"]')
+        link_long = logo_element.get_attribute('style')
+        index_start = link_long.find('url(')
+        link_img = link_long[index_start+4:-2]
+        self.img_id += 1
+        download_img(link_img, self.img_id)
+
+    def end_session(self):                      # End the session by quitting the driver
+        self.driver.quit()
+
 if __name__ == "__main__":
     
     ticker_list = ['AAPL']
     yahoo_finance = Scraper()
 
     yahoo_finance.extract_all_data(ticker_list)
+    yahoo_finance.extract_logo()
 
     yahoo_finance.end_session()
