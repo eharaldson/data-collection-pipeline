@@ -13,27 +13,58 @@ import json
 import requests
 
 def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a function is completed to make sure website does not think I am a bot
+    '''
+    This function is a wrapper to sleep for 2 seconds after the function is called - so that the website does not suspect a bot.
+
+    Args:
+        func (function): the function to be wrapped
+
+    Returns:
+        wrapper (function): wrapped function
+    '''
     def wrapper(*args, **kwargs):
         output = func(*args, **kwargs)
         time.sleep(2)
         return output
     return wrapper
 
-def create_folder(folder_name): # Create a foler in the current directory
+def create_folder(folder_name):
+    '''
+    This function is used to create a folder in the current directory
+
+    Args:
+        folder_name (str): folder name to be created.
+
+    Returns:
+        final_directory: the directory of the folder.
+    '''
     current_directory = os.getcwd()
     final_directory = os.path.join(current_directory, folder_name)
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
     return final_directory
 
-def save_json(dict, file_path): # Save a dictonary into json file in specific file_path
+def save_json(dict, file_path):
+    '''
+    This function is used to save a dictionary to a file
+
+    Args:
+        dict (dictionary): the dictionary to be saved.
+        file_path (str): the path for the file to be saved.
+    '''
     completeName = os.path.join(file_path, dict['ticker']+".json")  
     if not os.path.exists(completeName):
         with open(completeName, "w") as file:
             json.dump(dict, file)     
 
 def download_img(img_url, id):  # Download an image with correct file name in the images folder of raw_data
-    print(img_url[1:-1])
+    '''
+    This function is used to download an image from a url to a images folder.
+
+    Args:
+        img_url (str): the image url of the image to be downloaded
+        id (int): the id of the image to be saved
+    '''
     img_data = requests.get(img_url[1:-1]).content
     date_string = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
     date = date_string[:10].replace('-', '')
@@ -43,17 +74,33 @@ def download_img(img_url, id):  # Download an image with correct file name in th
     with open(file_name, "wb") as file:
         file.write(img_data)
 
-class Scraper:      # Class with methods to scrape websites
+class Scraper:
+    '''
+    This class is used to represent a yahoo finance scraping tool.
 
+    Attributes:
+        driver (selenium.webdriver): a driver to drive the selenium scraping in a browser.
+        landing_page (bool): true when the browser is on the landing page.
+        img_id (int): id for naming image file names.
+    '''
     # Constructor
     def __init__(self):
+        '''
+        See help(Scraper) for accurate signature
+        '''
         self.driver = webdriver.Chrome() 
         self.landing_page = True
         self.img_id = 0
 
     # Methods
     @wait
-    def look_at(self, url):                     # Look at webpage given by url and bypass cookies
+    def look_at(self, url):
+        '''
+        This function is used to look at a certain url using a selenium driver.
+
+        Args:
+            url (str): the url to look at.
+        '''
         self.driver.get(url)
         time.sleep(2)
         delay = 10
@@ -65,7 +112,13 @@ class Scraper:      # Class with methods to scrape websites
             print("Loading took too much time!")
 
     @wait
-    def search(self, string):                   # Enter a string into the search bar
+    def search(self, string):
+        '''
+        This function is used to search something in the search bar.
+
+        Args:
+            string (str): the string to be searched.
+        '''
         search_bar = self.driver.find_element(by=By.XPATH, value='//*[@id="yfin-usr-qry"]')
         search_bar.click()
         search_bar.send_keys(string)
@@ -73,21 +126,44 @@ class Scraper:      # Class with methods to scrape websites
         self.landing_page = False
 
     @wait
-    def scroll_bottom(self):                    # Scroll to the bottom of the page
+    def scroll_bottom(self):
+        '''
+        This function is used to scroll to the bottom of the page.
+        '''
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     @wait
-    def scroll(self, pixels):                   # Scroll to down by pixels
+    def scroll(self, pixels):
+        '''
+        This function is used to scroll by a specific number of pixels.
+
+        Args:
+            pixels (int): the number of pixels to scroll down by.
+        '''
         self.driver.execute_script(f"window.scrollBy(0,{pixels});")
 
-    def ticker_to_link(self, tickers):          # Takes in a list of tickers and returns a list of the links to each tickers statistics and analysis page
+    def ticker_to_link(self, tickers):
+        '''
+        This function is used to turn a list of strings containing ticker symbols to a list of corresponding yahoo finance urls.
+
+        Args:
+            tickers (list[str]): the list of tickers
+
+        Returns:
+            links (): the list of urls
+        '''
         links = []
         for ticker in tickers:
             links.append((f'https://finance.yahoo.com/quote/{ticker}/', ticker))
         return links
 
-    def extract_statistics_page(self):          # Extract data from the statistics page of a ticker
+    def extract_statistics_page(self):
+        '''
+        This function is used to extract the data from the statsitics page of an equity.
 
+        Returns:
+            data_dict (dictionary): the dictionary of data containing the statistics from the page
+        '''
         # Whole table
         table_section = self.driver.find_element(by=By.XPATH, value='//section[@data-test="qsp-statistics"]')
         table_element = table_section.find_elements(by=By.XPATH, value='./div')[-1]
@@ -137,15 +213,29 @@ class Scraper:      # Class with methods to scrape websites
 
         return data_dict
 
-    def extract_summary_page(self):             # Extract data from summary page
+    def extract_summary_page(self):
+        '''
+        This function is used to extract data from the summary page.
+
+        Returns:
+            data_dict (dictionary): the dictionary of data from the summary page
+        '''
         target_estimate = self.driver.find_element(by=By.XPATH, value='//td[@data-test="ONE_YEAR_TARGET_PRICE-value"]').text
         previous_close = self.driver.find_element(by=By.XPATH, value='//td[@data-test="PREV_CLOSE-value"]').text
         data_dict = {'previous_close': float(previous_close), 'target_estimate': float(target_estimate)}
 
         return data_dict
 
-    def extract_data_ticker(self, link):        # Extract data for one ticker with link inputted into method
-        
+    def extract_data_ticker(self, link):
+        '''
+        This function is used to extract the data for the specific ticker.
+
+        Args:
+            link (str): the link to the specific ticker
+
+        Returns:
+            data (dicitonary): the dictionary of all data for one ticker
+        '''
         # Increment id to ensure each ticker has its own unique id
         self.id += 1
 
@@ -171,8 +261,13 @@ class Scraper:      # Class with methods to scrape websites
 
         return data
 
-    def extract_all_data(self, tickers):        # Extract data for each ticker inputted into method
+    def extract_all_data(self, tickers):
+        '''
+        This function is used to extract the data for all tickers and save it to a json file for each ticker.
 
+        Args:
+            tickers (list[str]): the list of tickers
+        '''
         # Collect a list of links to the tickers to visit
         list_of_links = self.ticker_to_link(tickers)
 
@@ -187,7 +282,10 @@ class Scraper:      # Class with methods to scrape websites
             data = self.extract_data_ticker(link)
             save_json(data, folder_path)    # Save file in raw_data folder
 
-    def extract_logo(self):                     # Extract Yahoo Finance logo
+    def extract_logo(self):
+        '''
+        This function is used to extract the yahoo finance logo and download it.
+        '''
         logo_element = self.driver.find_element(by=By.XPATH, value='//a[@id="header-logo"]')
         link_long = logo_element.get_attribute('style')
         index_start = link_long.find('url(')
@@ -195,15 +293,17 @@ class Scraper:      # Class with methods to scrape websites
         self.img_id += 1
         download_img(link_img, self.img_id)
 
-    def end_session(self):                      # End the session by quitting the driver
+    def end_session(self):
+        '''
+        This function is used to end the session.
+        '''
         self.driver.quit()
 
 if __name__ == "__main__":
     
-    ticker_list = ['AAPL']
+    ticker_list = ['AAPL', 'AMZN', 'GOOG', 'TSLA', 'SLB', 'USB']
     yahoo_finance = Scraper()
 
     yahoo_finance.extract_all_data(ticker_list)
-    yahoo_finance.extract_logo()
 
     yahoo_finance.end_session()
