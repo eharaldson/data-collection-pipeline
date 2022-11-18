@@ -82,6 +82,7 @@ class Scraper:
         driver (selenium.webdriver): a driver to drive the selenium scraping in a browser.
         landing_page (bool): true when the browser is on the landing page.
         img_id (int): id for naming image file names.
+        sfirst_search (bool): true if this is the first search and therefore the browser should check for the cookies banner and other banner.
     '''
     # Constructor
     def __init__(self):
@@ -91,6 +92,7 @@ class Scraper:
         self.driver = webdriver.Chrome() 
         self.landing_page = True
         self.img_id = 0
+        self.first_search = True
 
     # Methods
     @wait
@@ -102,14 +104,23 @@ class Scraper:
             url (str): the url to look at.
         '''
         self.driver.get(url)
-        time.sleep(2)
         delay = 10
-        try:
-            WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//div[@class="con-wizard"]')))
-            accept_cookies_button = WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//button[@class="btn primary"]')))
-            accept_cookies_button.click()
-        except TimeoutException:
-            print("Loading took too much time!")
+        if self.first_search == True:
+            try:
+                WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//div[@class="con-wizard"]')))
+                accept_cookies_button = WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//button[@class="btn primary"]')))
+                accept_cookies_button.click()
+                try:
+                    WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Close"]')))
+                    accept_cookies_button = WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Close"]')))
+                    accept_cookies_button.click()
+                except TimeoutException:
+                    print("Loading took too much time!")
+
+            except TimeoutException:
+                print("Loading took too much time!")
+
+            self.first_search = False
 
     @wait
     def search(self, string):
