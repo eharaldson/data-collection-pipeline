@@ -1,5 +1,6 @@
 from yahoo_scraper import Scraper
-from yahoo_scraper import wait, create_folder, save_json, download_img
+from yahoo_scraper import wait
+from file_functions import create_folder, save_json, download_img
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QMainWindow, QDialogButtonBox, QVBoxLayout, QGroupBox
 
 import pandas as pd

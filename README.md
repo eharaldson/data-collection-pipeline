@@ -10,3 +10,8 @@
 - A raw data folder holds data for each stock in a json file and contains an image file which now holds the downloaded logo for the yahoo finance website which can be found there now with the file name indicating the the date and time downloaded.
 
 - Abstraction has been used to hide some functions in a separate file that contains a function that will convert numbered data in string form from the webscraping. As these functions are similar and could be used in other situations, I decided to put it in a separate file to clean up the yahoo_scraper.py file.
+
+## Milestone 5
+- Worked more on creating a general stock screener. The problem is that web scraping using selenium is very slow and to have a screener for all the stocks in the nasdaq (~80,000 stocks) would take several days to complete. Therefore instead I will download data for some stocks I am interested in and performing the screening on these instead.
+
+- Created test files using unittest to ensure proper working order for all the public methods.

@@ -6,11 +6,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from datetime import datetime
 from convert_data import convert
-
+from file_functions import create_folder, save_json, download_img
 import time
-import os
-import json
-import requests
 
 def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a function is completed to make sure website does not think I am a bot
     '''
@@ -28,51 +25,10 @@ def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a fun
         return output
     return wrapper
 
-def create_folder(folder_name):
-    '''
-    This function is used to create a folder in the current directory
-
-    Args:
-        folder_name (str): folder name to be created.
-
-    Returns:
-        final_directory: the directory of the folder.
-    '''
-    current_directory = os.getcwd()
-    final_directory = os.path.join(current_directory, folder_name)
-    if not os.path.exists(final_directory):
-        os.makedirs(final_directory)
-    return final_directory
-
-def save_json(dict, file_path):
-    '''
-    This function is used to save a dictionary to a file
-
-    Args:
-        dict (dictionary): the dictionary to be saved.
-        file_path (str): the path for the file to be saved.
-    '''
-    completeName = os.path.join(file_path, dict['ticker']+".json")  
-    if not os.path.exists(completeName):
-        with open(completeName, "w") as file:
-            json.dump(dict, file)     
-
-def download_img(img_url, id):  # Download an image with correct file name in the images folder of raw_data
-    '''
-    This function is used to download an image from a url to a images folder.
-
-    Args:
-        img_url (str): the image url of the image to be downloaded
-        id (int): the id of the image to be saved
-    '''
-    img_data = requests.get(img_url[1:-1]).content
-    date_string = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-    date = date_string[:10].replace('-', '')
-    time = date_string[11:].replace(':', '')
-    directory = create_folder('raw_data/images')
-    file_name = os.path.join(directory, date+'_'+time+'_'+str(id)+'.png')
-    with open(file_name, "wb") as file:
-        file.write(img_data)
+def dict_append(dict, dict_to_add):
+    for key in dict:
+        dict[key] += dict_to_add[key]
+    return dict
 
 class Scraper:
     '''
@@ -168,7 +124,7 @@ class Scraper:
             links.append((f'https://finance.yahoo.com/quote/{ticker}/', ticker))
         return links
 
-    def extract_statistics_page(self):
+    def __extract_statistics_page(self):
         '''
         This function is used to extract the data from the statsitics page of an equity.
 
@@ -212,19 +168,19 @@ class Scraper:
         short_ratio = convert(short_ratio)
         
         # Collate data into dictionary
-        data_dict = {'market_cap': market_cap, 
-                    'trailing_pe': trailing_pe, 
-                    'forward_pe': forward_pe,
-                    'trailing_ps': trailing_ps,
-                    'profit_margin': profit_margin,
-                    'return_on_assets': return_on_assets,
-                    'ebitda': ebitda,
-                    'current_ratio': current_ratio,
-                    'short_ratio': short_ratio}
+        data_dict = {'market_cap': [market_cap], 
+                    'trailing_pe': [trailing_pe], 
+                    'forward_pe': [forward_pe],
+                    'trailing_ps': [trailing_ps],
+                    'profit_margin': [profit_margin],
+                    'return_on_assets': [return_on_assets],
+                    'ebitda': [ebitda],
+                    'current_ratio': [current_ratio],
+                    'short_ratio': [short_ratio]}
 
         return data_dict
 
-    def extract_summary_page(self):
+    def __extract_summary_page(self):
         '''
         This function is used to extract data from the summary page.
 
@@ -233,11 +189,11 @@ class Scraper:
         '''
         target_estimate = self.driver.find_element(by=By.XPATH, value='//td[@data-test="ONE_YEAR_TARGET_PRICE-value"]').text
         previous_close = self.driver.find_element(by=By.XPATH, value='//td[@data-test="PREV_CLOSE-value"]').text
-        data_dict = {'previous_close': float(previous_close), 'target_estimate': float(target_estimate)}
+        data_dict = {'previous_close': [float(previous_close)], 'target_estimate': [float(target_estimate)]}
 
         return data_dict
 
-    def extract_data_ticker(self, link):
+    def __extract_data_ticker(self, link):
         '''
         This function is used to extract the data for the specific ticker.
 
@@ -251,13 +207,13 @@ class Scraper:
         self.id += 1
 
         # Initialise a data dictionary with the specific idea for this ticker
-        data = {'id': self.id, 'ticker': link[1]}
+        data = {'id': [self.id], 'ticker': [link[1]]}
 
         # Visit the tickers yahoo finance page 
         self.look_at(link[0])
 
         # Extract data from the summary page
-        data_summary = self.extract_summary_page()
+        data_summary = self.__extract_summary_page()
         data = data | data_summary
 
         # Move to the statistics page by clicking on the button
@@ -267,7 +223,7 @@ class Scraper:
         time.sleep(1)
 
         # Extract data from the statistics page
-        data_statistics = self.extract_statistics_page()
+        data_statistics = self.__extract_statistics_page()
         data = data | data_statistics
 
         return data
@@ -289,9 +245,17 @@ class Scraper:
         folder_path = create_folder('raw_data')
 
         # Loop through the list of links and extract the data needed
+        data_dictionary = self.__extract_data_ticker(list_of_links[0])
+        del list_of_links[0]
+
         for link in list_of_links:
-            data = self.extract_data_ticker(link)
-            save_json(data, folder_path)    # Save file in raw_data folder
+            data_dictionary = dict_append(data_dictionary, self.__extract_data_ticker(link))
+
+            # data = self.__extract_data_ticker(link)
+            # save_json(data, link[1], folder_path)    # Save file in raw_data folder
+
+        self.all_data_dict = data_dictionary
+        return data_dictionary
 
     def extract_logo(self):
         '''
@@ -312,9 +276,10 @@ class Scraper:
 
 if __name__ == "__main__":
     
-    ticker_list = ['AAPL', 'AMZN', 'GOOG', 'TSLA', 'SLB', 'USB']
+    ticker_list = ['AAPL', 'AMZN', 'GOOG']
     yahoo_finance = Scraper()
 
-    yahoo_finance.extract_all_data(ticker_list)
-
+    data = yahoo_finance.extract_all_data(ticker_list)
+    print(data)
+    
     yahoo_finance.end_session()
