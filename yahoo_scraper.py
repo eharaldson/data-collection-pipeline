@@ -280,6 +280,5 @@ if __name__ == "__main__":
     yahoo_finance = Scraper()
 
     data = yahoo_finance.extract_all_data(ticker_list)
-    print(data)
-    
+
     yahoo_finance.end_session()

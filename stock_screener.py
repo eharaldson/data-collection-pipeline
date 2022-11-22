@@ -9,11 +9,11 @@ import sys
 class StockScreener:
 
     # Constructor
-    def __init__(self, ticker_data) :
-        self.ticker_data = ticker_data
+    def __init__(self) :
         self.start_up()
 
     # Methods
+
     def getInfo(self):                      # Method called when OK pressed: Take in user input and then show correct data
         
         mkt_cap_minimum = self.mkt_cap_line_edit_minimum.text()
@@ -42,6 +42,8 @@ class StockScreener:
 
         short_ratio_minimum = self.short_line_edit_minimum.text()
         short_ratio_maximum = self.short_line_edit_maximum.text()
+
+        print(profit_margin_minimum)
 
         self.window.close()
 
@@ -201,9 +203,8 @@ class StockScreener:
         self.app.exec()
 
 def main():
-    ticker_list = ['AAPL']
-    data = pd.read_csv('nasdaq_tickers.csv', index_col=False)
-    stock_screener = StockScreener(data)
+    # data = pd.read_csv('nasdaq_tickers.csv', index_col=False)
+    stock_screener = StockScreener()
 
 if __name__ == "__main__":
     main()
