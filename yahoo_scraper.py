@@ -30,10 +30,18 @@ def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a fun
 
 def dict_append(dict, dict_to_add):
     if len(dict) == 0:
+        for key in dict_to_add:
+            if dict_to_add[key][0] == None:
+                dict_to_add[key] == ['N/A']
         return dict_to_add
+    elif len(dict_to_add) == 0:
+        return dict
     else:
         for key in dict:
-            dict[key] += dict_to_add[key]
+            if dict_to_add[key][0] == None:
+                dict[key] += ['N/A']
+            else:
+                dict[key] += dict_to_add[key]
         return dict
 
 class Scraper:
@@ -237,7 +245,7 @@ class Scraper:
 
             return data
         except:
-            pass
+            return {}
 
     def extract_all_data(self, tickers):
         '''
@@ -300,7 +308,7 @@ class Scraper:
 
             self.all_data_dict = data_dictionary
             save_json(data_dictionary, 'all_data', folder_path)
-            
+
             return data_dictionary
         else:
             self.extract_all_data_letter()
@@ -327,6 +335,7 @@ if __name__ == "__main__":
     ticker_list = ['AAPL', 'AMZN', 'GOOG', 'TSLA', 'ORCL']
     yahoo_finance = Scraper()
 
-    data = yahoo_finance.extract_all_data_letter()
-    print(data)
+    data = yahoo_finance.extract_all_data(ticker_list)
+    df = pd.DataFrame.from_dict(data)
+    print(df.head())
     yahoo_finance.end_session()
