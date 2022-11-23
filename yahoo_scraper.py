@@ -1,12 +1,15 @@
-from selenium import webdriver 
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
-from datetime import datetime
-from convert_data import convert
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium import webdriver 
+
 from file_functions import create_folder, save_json, download_img
+from convert_data import convert
+
+import pandas as pd
 import time
 
 def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a function is completed to make sure website does not think I am a bot
@@ -26,9 +29,12 @@ def wait(func):                 # Wait wrapper: sleeps for 2 seconds after a fun
     return wrapper
 
 def dict_append(dict, dict_to_add):
-    for key in dict:
-        dict[key] += dict_to_add[key]
-    return dict
+    if len(dict) == 0:
+        return dict_to_add
+    else:
+        for key in dict:
+            dict[key] += dict_to_add[key]
+        return dict
 
 class Scraper:
     '''
@@ -45,7 +51,9 @@ class Scraper:
         '''
         See help(Scraper) for accurate signature
         '''
-        self.driver = webdriver.Chrome() 
+        options = Options()
+        options.headless = True
+        self.driver = webdriver.Chrome(options=options)
         self.landing_page = True
         self.img_id = 0
         self.first_search = True
@@ -132,7 +140,7 @@ class Scraper:
             data_dict (dictionary): the dictionary of data containing the statistics from the page
         '''
         # Whole table
-        table_section = self.driver.find_element(by=By.XPATH, value='//section[@data-test="qsp-statistics"]')
+        table_section = self.driver.find_element(by=By.XPATH, value='//section[@data-yaft-module="tdv2-applet-KeyStatistics"]')
         table_element = table_section.find_elements(by=By.XPATH, value='./div')[-1]
         sub_table_elements = table_element.find_elements(by=By.XPATH, value='./div')
 
@@ -203,30 +211,33 @@ class Scraper:
         Returns:
             data (dicitonary): the dictionary of all data for one ticker
         '''
-        # Increment id to ensure each ticker has its own unique id
-        self.id += 1
+        try:
+            # Increment id to ensure each ticker has its own unique id
+            self.id += 1
 
-        # Initialise a data dictionary with the specific idea for this ticker
-        data = {'id': [self.id], 'ticker': [link[1]]}
+            # Initialise a data dictionary with the specific idea for this ticker
+            data = {'id': [self.id], 'ticker': [link[1]]}
 
-        # Visit the tickers yahoo finance page 
-        self.look_at(link[0])
+            # Visit the tickers yahoo finance page 
+            self.look_at(link[0])
 
-        # Extract data from the summary page
-        data_summary = self.__extract_summary_page()
-        data = data | data_summary
+            # Extract data from the summary page
+            data_summary = self.__extract_summary_page()
+            data = data | data_summary
 
-        # Move to the statistics page by clicking on the button
-        self.driver.find_element(by=By.XPATH, value='//li[@data-test="STATISTICS"]').click()
+            # Move to the statistics page by clicking on the button
+            self.driver.find_element(by=By.XPATH, value='//li[@data-test="STATISTICS"]').click()
 
-        # Wait 1 seconds so that the website does not suspect a bot
-        time.sleep(1)
+            # Wait 1 seconds so that the website does not suspect a bot
+            time.sleep(1)
 
-        # Extract data from the statistics page
-        data_statistics = self.__extract_statistics_page()
-        data = data | data_statistics
+            # Extract data from the statistics page
+            data_statistics = self.__extract_statistics_page()
+            data = data | data_statistics
 
-        return data
+            return data
+        except:
+            pass
 
     def extract_all_data(self, tickers):
         '''
@@ -245,17 +256,54 @@ class Scraper:
         folder_path = create_folder('raw_data')
 
         # Loop through the list of links and extract the data needed
-        data_dictionary = self.__extract_data_ticker(list_of_links[0])
-        del list_of_links[0]
+        data_dictionary = dict()
 
         for link in list_of_links:
-            data_dictionary = dict_append(data_dictionary, self.__extract_data_ticker(link))
-
-            # data = self.__extract_data_ticker(link)
-            # save_json(data, link[1], folder_path)    # Save file in raw_data folder
+            data = self.__extract_data_ticker(link)
+            data_dictionary = dict_append(data_dictionary, data)
+            save_json(data, link[1], folder_path)    # Save file in raw_data folder
 
         self.all_data_dict = data_dictionary
+        save_json(data_dictionary, 'all_data', folder_path)
         return data_dictionary
+
+    def extract_all_data_letter(self):
+        '''
+        This function is used to extract the data for all tickers on the nasdaq starting with letter and save it to a json file for each ticker.
+
+        Args:
+            letter (str): the letter for ticker to start with
+        '''
+        letter = input('Please enter a single letter: ')
+
+        if letter.isalpha() and len(letter) == 1:
+            
+            df_nasdaq = pd.read_csv('nasdaq_tickers.csv').dropna(axis=0)
+            tickers = [tick for tick in df_nasdaq['Symbol'].to_list() if tick[0] == letter.upper()]
+
+            # Collect a list of links to the tickers to visit
+            list_of_links = self.ticker_to_link(tickers)
+
+            # Initialise the ids of the data rows which will then be returned
+            self.id = 0
+
+            # Create a raw data folder to store data
+            folder_path = create_folder('raw_data')
+
+            # Loop through the list of links and extract the data needed
+            data_dictionary = dict()
+
+            for link in list_of_links:
+                data = self.__extract_data_ticker(link)
+                data_dictionary = dict_append(data_dictionary, data)
+                save_json(data, link[1], folder_path)    # Save file in raw_data folder
+
+            self.all_data_dict = data_dictionary
+            save_json(data_dictionary, 'all_data', folder_path)
+            
+            return data_dictionary
+        else:
+            self.extract_all_data_letter()
 
     def extract_logo(self):
         '''
@@ -276,9 +324,9 @@ class Scraper:
 
 if __name__ == "__main__":
     
-    ticker_list = ['AAPL', 'AMZN', 'GOOG']
+    ticker_list = ['AAPL', 'AMZN', 'GOOG', 'TSLA', 'ORCL']
     yahoo_finance = Scraper()
 
-    data = yahoo_finance.extract_all_data(ticker_list)
-
+    data = yahoo_finance.extract_all_data_letter()
+    print(data)
     yahoo_finance.end_session()

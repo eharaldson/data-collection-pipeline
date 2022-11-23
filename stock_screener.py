@@ -1,10 +1,9 @@
-from yahoo_scraper import Scraper
-from yahoo_scraper import wait
-from file_functions import create_folder, save_json, download_img
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QMainWindow, QDialogButtonBox, QVBoxLayout, QGroupBox
 
 import pandas as pd
+import json
 import sys
+import os
 
 class StockScreener:
 
@@ -43,9 +42,19 @@ class StockScreener:
         short_ratio_minimum = self.short_line_edit_minimum.text()
         short_ratio_maximum = self.short_line_edit_maximum.text()
 
-        print(profit_margin_minimum)
-
         self.window.close()
+
+        df = pd.DataFrame()
+        cwd = os.getcwd()
+        list_of_jsons = os.listdir(os.path.join(cwd, 'raw_data'))[1:]
+
+        for json_file in list_of_jsons:
+            relative_path = os.path.join(cwd, 'raw_data', json_file)
+            with open(relative_path, 'r') as f:
+                data = json.loads(f.read())
+                df = df.append(data, ignore_index=True)   
+
+        print(df.head())
 
     def cancel(self):                       # Method called when CANCEL pressed: Exit the window
         self.window.close()
@@ -151,7 +160,7 @@ class StockScreener:
         self.short_layout.addWidget(QLabel('Short ratio:'))
         self.short_line_edit_minimum = QLineEdit()
         self.short_line_edit_minimum.setPlaceholderText("Min")
-        self.short_layout.addWidget(self.current_ratio_line_edit_minimum)
+        self.short_layout.addWidget(self.short_line_edit_minimum)
         self.short_line_edit_maximum = QLineEdit()
         self.short_line_edit_maximum.setPlaceholderText("Max")
         self.short_layout.addWidget(self.short_line_edit_maximum)
