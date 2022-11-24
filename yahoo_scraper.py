@@ -60,6 +60,8 @@ class Scraper:
         See help(Scraper) for accurate signature
         '''
         options = Options()
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')     
         options.headless = True
         self.driver = webdriver.Chrome(options=options)
         self.landing_page = True
@@ -76,7 +78,7 @@ class Scraper:
             url (str): the url to look at.
         '''
         self.driver.get(url)
-        delay = 10
+        delay = 5
         if self.first_search == True:
             try:
                 WebDriverWait(self.driver, delay).until(EC.presence_of_element_located((By.XPATH, '//div[@class="con-wizard"]')))
@@ -206,7 +208,6 @@ class Scraper:
         target_estimate = self.driver.find_element(by=By.XPATH, value='//td[@data-test="ONE_YEAR_TARGET_PRICE-value"]').text
         previous_close = self.driver.find_element(by=By.XPATH, value='//td[@data-test="PREV_CLOSE-value"]').text
         data_dict = {'previous_close': [float(previous_close)], 'target_estimate': [float(target_estimate)]}
-
         return data_dict
 
     def __extract_data_ticker(self, link):
@@ -273,6 +274,7 @@ class Scraper:
 
         self.all_data_dict = data_dictionary
         save_json(data_dictionary, 'all_data', folder_path)
+
         return data_dictionary
 
     def extract_all_data_letter(self):
@@ -332,10 +334,8 @@ class Scraper:
 
 if __name__ == "__main__":
     
-    ticker_list = ['AAPL', 'AMZN', 'GOOG', 'TSLA', 'ORCL']
     yahoo_finance = Scraper()
-
-    data = yahoo_finance.extract_all_data(ticker_list)
+    data = yahoo_finance.extract_all_data_letter()
     df = pd.DataFrame.from_dict(data)
     print(df.head())
     yahoo_finance.end_session()
