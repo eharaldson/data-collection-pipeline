@@ -15,3 +15,8 @@
 - Worked more on creating a general stock screener. The problem is that web scraping using selenium is very slow and to have a screener for all the stocks in the nasdaq (~80,000 stocks) would take several days to complete. Therefore instead I will download data for some stocks I am interested in and performing the screening on these instead.
 
 - Created test files using unittest to ensure proper working order for all the public methods.
+
+## Milestone 6
+- The process of creating a stock screener has been slow and therefore to speed up the project I have decided instead to configure the scraper to ask for a letter input. The scraper will then return data on all tickers that start with that letter.
+
+- In this milestone, docker was used to create an image of the scraper program which was then pushed to my docker hub. 
