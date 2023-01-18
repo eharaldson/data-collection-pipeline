@@ -1,4 +1,13 @@
 # Data Collection Pipeline
+
+In this project I will use the selenium module with python to scrape a website for both image and tabular data.
+
+I decided on the yahoo finance website as it holds a lot of data points in a structured format and I am very interested in investing in general so I though it would be interesting.
+
+I will create an app that asks a user for a letter and will then save a csv file of important data points (e.g. price/earnings, 1 year target estimate, profit margin ...) for each stock for which the ticker starts with the letter inputted.
+
+The application will be containerised in a Docker image so that it is easily deployable by anyone who accesses my Docker account.
+
 ## Milestone 3
 - For this project, I decided to do the website scraping on yahoo finance. I thought this would be a good website for this as it is free to use and holds a lot of specific information for several different companies which can then be accessed with the same code. In addition I thought it would be interesting to extend the project by creating a stock screener that would scrape yahoo finance for the relevant data. This aspect would have an interesting use case and I believe is doable in the time frame of the porject.
 
